@@ -1,16 +1,66 @@
-const sqlite3 = require('sqlite3').verbose();
-const db = new sqlite3.Database('./database.sql');
+const mysql = require('mysql2');
+const dotenv = require('dotenv');
+dotenv.config();
+let instance = null;
 
-const database = {}
+const connection = mysql.createConnection({
+    connectionLimit : 100, //important
+    host     : '34.159.78.37',
+    user     : 'root',
+    password : 'realm135*',
+    database : 'enchantedrealm',
+    debug : false,
+})
 
-database.run = function (query) {
-    db.run(query);
-};
+connection.connect((err)=>{
+    if (err){
+        console.log(err.message);
+    }
+    console.log('db success');
+})
 
-database.runPrepared = function (query, parameter) {
-    let stmt = db.prepare(query);
-    stmt.run(parameter);
-    stmt.finalize();
+class Database{
+    static getdatabaseInstance(){
+    return instance ? instance : new Database();
+    }
+    async getAllData(){
+        try {
+          /*  const response = await new Promise((resolve, reject)=> {
+                const query = "SELECT * FROM user WHERE u_id = ?"
+                connection.query(query, [1],(err, result)=>{
+                    if (err) reject(new Error(err.message))
+                    resolve(result);
+                })
+            });*/
+            const response = await new Promise((resolve, reject)=> {
+                const query = "SELECT * FROM user"
+                connection.query(query,(err, result)=>{
+                    if (err) reject(new Error(err.message))
+                    resolve(result);
+                })
+            });
+            console.log(response);
+            return response;
+        }catch (error){
+            console.log(error)
+        }
+    }
+    async insertNewUser(name, password, confirmedPassword){
+        try {
+            const test = await new Promise((resolve, reject)=> {
+                const query = 'INSERT INTO user (name , password) VALUES (?, ?);';
+                connection.query(query,[name,password],(err, results)=>{
+                    if (err) reject(new Error(err.message))
+                    resolve(results);
+                })
+            });
+            console.log(test);
+            return test;
+        }catch (error) {
+            console.log(error);
+        }
+    }
 }
+module.exports = Database;
 
-module.exports = database;
+
