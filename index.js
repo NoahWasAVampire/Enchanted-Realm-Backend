@@ -21,9 +21,9 @@ app.use(router);
 
 // add & configure middleware
 app.use(session({
-    genid: (req) => {
+    genid: (request) => {
         console.log('Inside the session middleware')
-        console.log(req.sessionID)
+        console.log(request.sessionID)
         return uuid.v4() // use UUIDs for session IDs
     },
     secret: 'keyboard cat',
@@ -32,9 +32,9 @@ app.use(session({
 }))
 
 // create the homepage route at '/'
-app.get('/', (req, res) => {
+app.get('/', (request, response) => {
     console.log('Inside the homepage callback function')
-    console.log(req.sessionID)
+    console.log(request.sessionID)
     res.send(`You hit home page!\n`)
 })
 
@@ -82,10 +82,28 @@ app.get('/getAll',(request,response) =>{
     })*/
 })
 
+
+app.post('/getUser',(request,response) =>{
+    console.log(request.sessionID)
+    const { name } = request.body;
+    const {password} = request.body;
+    const db = database.getdatabaseInstance()
+    const result = db.getUser(name, password);
+    result
+        .then(data => response.json({data : data}))
+        .catch(err => console.log(err));
+    /* response.json({
+         success: true
+     })*/
+})
+
 //update
 
 
 //delete
+app.delete('/delete/:id', (request, response)=>{
+    console.log(request.params);
+})
 
 
 app.listen(3000, () => {

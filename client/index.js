@@ -1,3 +1,4 @@
+//sd
 document.addEventListener('DOMContentLoaded', function (){
     fetch('http://localhost:3000/getAll')
         .then(response => response.json())
@@ -25,12 +26,49 @@ addBtn.onclick = function () {
             .then(response => response.json())
             .then(data => insertRowIntoTable(data['data']));
 }
+const  loginBtn = document.querySelector('#login-user-btn');
+
+loginBtn.onclick = function (){
+    const nameInput = document.querySelector('#name-input');
+    const passwordInput = document.querySelector('#password-input');
+    const confirmedPasswordInput = document.querySelector('#confirm-password-input');
+    const name = nameInput.value;
+    const password = passwordInput.value;
+    const confirmedPassword = confirmedPasswordInput.value;
+    nameInput.value = "";
+    passwordInput.value = "";
+    confirmedPasswordInput.value = "";
+    fetch('http://localhost:3000/getUser', {
+        headers: {
+            'Content-type': 'application/json'
+        },
+        method: 'POST',
+        body: JSON.stringify({ name : name, password : password})
+    })
+        .then(response => response.json())
+        .then(data => insertRowIntoTable(data['data']));
+}
+
+
+
+
+document.querySelector('table tbody').addEventListener('click',function(event){
+    if (event.target.className === "delete-row-btn"){
+        deleteRowById(event.target.dataset.id);
+    }
+})
+function deleteRowById(id){
+fetch('http://localhost:3000/delete/' + id, {
+    method: 'DELETE'
+    })
+    .then(response => response.json())
+    .then(data => console.log(data))
+}
 
 
 function insertRowIntoTable(data){
 
 }
-
 
 function loadHTMLTable(data){
     const table = document.querySelector('table tbody');
@@ -40,6 +78,7 @@ function loadHTMLTable(data){
         return;
     }
     let tableHtml = "";
+
     data.forEach(function ({u_id, name, password, highscore}){
         tableHtml += '<tr>';
         tableHtml += `<td>${u_id}</td>`;

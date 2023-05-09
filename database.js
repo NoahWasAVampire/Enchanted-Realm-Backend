@@ -60,6 +60,31 @@ class Database{
             console.log(error);
         }
     }
+    async getUser(name, password){
+        try {
+            /*  const response = await new Promise((resolve, reject)=> {
+                  const query = "SELECT * FROM user WHERE u_id = ?"
+                  connection.query(query, [1],(err, result)=>{
+                      if (err) reject(new Error(err.message))
+                      resolve(result);
+                  })
+              });*/
+            const response = await new Promise((resolve, reject)=> {
+                const query = "SELECT * FROM user WHERE name = ? AND password = ?"
+                connection.query(query,[name,password],(err, result)=>{
+                    if (err) reject(new Error(err.message))
+                    resolve(result);
+                })
+            });
+            console.log(response);
+            return response;
+        }catch (error){
+            console.log(error)
+        }
+    }
+
+
+
 }
 module.exports = Database;
 
