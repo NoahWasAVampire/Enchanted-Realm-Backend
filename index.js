@@ -1,19 +1,15 @@
 const express = require("express");
 const uuid = require('uuid');
-const cors = require('cors');
 const dotenv = require('dotenv');
 const session = require('express-session');
+const store = session.MemoryStore();
 dotenv.config();
-
-
 
 // create the server
 const app = express();
 const router = express.Router();
 const database = require('./database.js');
-const {response, request} = require("express");
-const {Database} = require("sqlite3");
-app.use(cors());
+
 app.use(express.json());
 app.use(express.urlencoded({extended:false}))
 app.use(router);
@@ -26,85 +22,87 @@ app.use(session({
         console.log(request.sessionID)
         return uuid.v4() // use UUIDs for session IDs
     },
-    secret: 'keyboard cat',
-    resave: false,
-    saveUninitialized: true
+    secret: 'unser wildes passwort',
+    cookie: {expires:60*60*1000},
+    saveUninitialized: false,
+    resave:false,
+    rolling:true,
+    store:store
 }))
 
 // create the homepage route at '/'
-app.get('/', (request, response) => {
+app.get('/', async (request, response) => {
     console.log('Inside the homepage callback function')
     console.log(request.sessionID)
-    res.send(`You hit home page!\n`)
+
+    let rows = await database.procedure('get_user',['no senior']);
+    console.log(rows);
+
+    response.send(`You hit home page!\n`)
 })
 
+let authMiddleware = (req, res, next) => {
+    if(req.session.authenticated) {
+        next();
+    } else {
+        return res.sendStatus(401);
+    }
+};
 
-
-
-//create
-app.post('/insert', (request, response) => {
-    const { name } = request.body;
-    const {password} = request.body;
-    const {confirmedPassword} = request.body;
-    console.log(name)
-    console.log(password);
-    console.log(confirmedPassword);
-    const db = database.getdatabaseInstance();
-    const result = db.insertNewUser(name,password,confirmedPassword)
-    result
-        .then(data => response.json({data:data}))
-        .catch(err => console.log(err))
-
-
-});
-//read
-/*
-router.get('/check',function (req,res){
-    pool.query('Select * FROM user',function (error, result){
-        if (error){
-            res.send(error)
-        }
-        else {
-            res.send(result)
-        }
-    })
-})*/
-
-
-app.get('/getAll',(request,response) =>{
-    const db = database.getdatabaseInstance()
-    const result = db.getAllData();
-    result
-        .then(data => response.json({data : data}))
-        .catch(err => console.log(err));
-   /* response.json({
-        success: true
-    })*/
+app.get('/test', authMiddleware, async (request, response) => {
+    response.send(`You hit home page!\n`)
 })
 
+app.post('/login', async(req, res) => {
+    const {username, password} = req.body; 
+    if(!username || !password) {
+        return res.sendStatus(401);
+    }
 
-app.post('/getUser',(request,response) =>{
-    console.log(request.sessionID)
-    const { name } = request.body;
-    const {password} = request.body;
-    const db = database.getdatabaseInstance()
-    const result = db.getUser(name, password);
-    result
-        .then(data => response.json({data : data}))
-        .catch(err => console.log(err));
-    /* response.json({
-         success: true
-     })*/
+    if(req.session.authenticated) {
+        return res.json(req.session);
+    } 
+    
+    let userData = await database.procedure('get_user', [username]);
+    
+    if(userData.length == 0) {
+        return res.sendStatus(401);
+    }
+
+    if(password != userData[0].password) {
+        return res.sendStatus(401);
+    }
+
+    req.session.authenticated = true;
+    req.session.user = {username, password};
+    res.json(req.session);
 })
 
-//update
+app.post('/register', async(req, res) => {
+    const {username, password} = req.body; 
+    
+    if(!username || !password) {
+        return res.status(403).json({msg:'Benutzername / Passwort fehlen'});
+    }
 
+    if(username.length < 6 || username.length > 45) {
+        return res.status(403).json({msg:'Der Benutzername sollte mindestens 6 Zeichen enthalten.'});
+    }
 
-//delete
-app.delete('/delete/:id', (request, response)=>{
-    console.log(request.params);
+    if(password.length < 6 || password.length > 45) {
+        return res.status(403).json({msg:'Das Passwort sollte mindestens 6 Zeichen enthalten.'});
+    }
+
+    let userData = await database.procedure('get_user', [username]);
+    
+    if(userData.length != 0) {
+        return res.status(403).json({msg:'Ein Benutzer mit diesem Namen existiert bereits.'});
+    }
+
+    await database.procedure('insert_user', [username, password]);
+
+    res.redirect(307, '/login');
 })
-
 
 app.listen(3000, () => {
     console.log("Server listening on Port 3000");
