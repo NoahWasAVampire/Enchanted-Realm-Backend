@@ -56,7 +56,7 @@ app.get('/test', authMiddleware, async (request, response) => {
 app.post('/login', async(req, res) => {
     const {username, password} = req.body; 
     if(!username || !password) {
-        return res.sendStatus(401);
+        return res.status(401).json({msg:'Bitte geben sie Nutzernamen und Passwort ein.'});
     }
 
     if(req.session.authenticated) {
@@ -66,11 +66,11 @@ app.post('/login', async(req, res) => {
     let userData = await database.procedure('get_user', [username]);
     
     if(userData.length == 0) {
-        return res.sendStatus(401);
+        return res.status(401).json({msg:'Der Benutzer existiert nicht.'});
     }
 
     if(password != userData[0].password) {
-        return res.sendStatus(401);
+        return res.status(401).json({msg:'Das Passwort ist falsch.'});
     }
 
     req.session.authenticated = true;
