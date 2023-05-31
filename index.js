@@ -45,7 +45,7 @@ let authMiddleware = (req, res, next) => {
     if(req.session.authenticated) {
         next();
     } else {
-        return res.sendStatus(401);
+        return res.status(401).json({msg:"Unauthorized"});
     }
 };
 
@@ -74,7 +74,7 @@ app.post('/login', async(req, res) => {
     }
 
     req.session.authenticated = true;
-    req.session.user = {username, password};
+    req.session.user = {id: userData[0].u_id, username, password};
     res.json(req.session);
 })
 
@@ -107,3 +107,18 @@ app.post('/register', async(req, res) => {
 app.listen(3000, () => {
     console.log("Server listening on Port 3000");
 });
+
+app.get('/highscore', authMiddleware, async (req, res) => {
+    let result = await database.procedure('get_highscore', [req.session.user.id]);
+    if(result.length == 0) {
+        res.status(500).json({msg:'Unerwarteter Fehler'});
+    }
+    result[0].username = req.session.user.username;
+    res.json(result[0]);
+})
+
+app.get('/logout', async(req,res)=>{
+    req.session.authenticated = false;
+    req.session.user = {};
+    res.json({msg:''});
+})
