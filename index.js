@@ -54,17 +54,17 @@ app.get('/test', authMiddleware, async (request, response) => {
 })
 
 app.post('/login', async(req, res) => {
-    const {username, password} = req.body; 
+    const {username, password} = req.body;
     if(!username || !password) {
         return res.status(401).json({msg:'Bitte geben sie Nutzernamen und Passwort ein.'});
     }
 
     if(req.session.authenticated) {
         return res.json(req.session);
-    } 
-    
+    }
+
     let userData = await database.procedure('get_user', [username]);
-    
+
     if(userData.length == 0) {
         return res.status(401).json({msg:'Der Benutzer existiert nicht.'});
     }
@@ -76,25 +76,26 @@ app.post('/login', async(req, res) => {
     req.session.authenticated = true;
     req.session.user = {id: userData[0].u_id, username, password};
     res.json(req.session);
+    console.log(req.session.user.id);
 })
 
 app.post('/register', async(req, res) => {
-    const {username, password} = req.body; 
-    
+    const {username, password} = req.body;
+
     if(!username || !password) {
         return res.status(403).json({msg:'Benutzername / Passwort fehlen'});
     }
 
-    if(username.length < 6 || username.length > 45) {
-        return res.status(403).json({msg:'Der Benutzername sollte mindestens 6 Zeichen enthalten.'});
+    if(username.length <= 6 || username.length > 45) {
+        return res.status(403).json({msg:'Der Benutzername sollte mindestens 7 Zeichen enthalten.'});
     }
 
-    if(password.length < 6 || password.length > 45) {
-        return res.status(403).json({msg:'Das Passwort sollte mindestens 6 Zeichen enthalten.'});
+    if(password.length <= 6 || password.length > 45) {
+        return res.status(403).json({msg:'Das Passwort sollte mindestens 7 Zeichen enthalten.'});
     }
 
     let userData = await database.procedure('get_user', [username]);
-    
+
     if(userData.length != 0) {
         return res.status(403).json({msg:'Ein Benutzer mit diesem Namen existiert bereits.'});
     }
@@ -121,4 +122,11 @@ app.get('/logout', async(req,res)=>{
     req.session.authenticated = false;
     req.session.user = {};
     res.json({msg:''});
+})
+
+app.post('/gameStatistic', authMiddleware, async(req, res) => {
+    req.session.authenticated = true;
+    res.json(req.session);
+    const {score, defeatedEnemy, distance} = req.body;
+    await database.procedure('insert_statistic', [req.session.user.id, score, defeatedEnemy, distance]);
 })
