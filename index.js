@@ -125,8 +125,10 @@ app.get('/logout', async(req,res)=>{
 })
 
 app.post('/gameStatistic', authMiddleware, async(req, res) => {
-    req.session.authenticated = true;
-    res.json(req.session);
-    const {score, defeatedEnemy, distance} = req.body;
-    await database.procedure('insert_statistic', [req.session.user.id, score, defeatedEnemy, distance]);
+    if (req.session.authenticated === true){
+        req.session.authenticated = true;
+        res.json(req.session);
+        const {score, defeatedEnemy, distance} = req.body;
+        await database.procedure('insert_statistic', [req.session.user.id, score, defeatedEnemy, distance]);
+    }
 })
