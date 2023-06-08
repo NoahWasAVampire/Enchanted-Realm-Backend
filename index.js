@@ -79,6 +79,28 @@ app.post('/login', async(req, res) => {
     console.log(req.session.user.id);
 })
 
+app.post('/deleteUser', async(req, res) => {
+    const {username, password} = req.body;
+    if(!username || !password) {
+        return res.status(401).json({msg:'Bitte geben sie ihren richten Nutzernamen und ihr Passwort ein.'});
+    }
+
+    if(req.session.authenticated) {
+        return res.json(req.session);
+    }
+    let userData = await database.procedure('get_user', [username]);
+
+    if(userData.length === 0) {
+        return res.status(401).json({msg:'Der Benutzer existiert nicht.'});
+    }
+
+    if(password !== userData[0].password) {
+        return res.status(401).json({msg:'Das Passwort ist falsch.'});
+    }
+    await database.procedure('delete_user', [username]);
+    res.json(req.session);
+})
+
 app.post('/register', async(req, res) => {
     const {username, password} = req.body;
 
@@ -86,12 +108,12 @@ app.post('/register', async(req, res) => {
         return res.status(403).json({msg:'Benutzername / Passwort fehlen'});
     }
 
-    if(username.length <= 6 || username.length > 45) {
-        return res.status(403).json({msg:'Der Benutzername sollte mindestens 7 Zeichen enthalten.'});
+    if(username.length < 5 || username.length > 45) {
+        return res.status(403).json({msg:'Der Benutzername sollte mindestens 6 Zeichen enthalten.'});
     }
 
-    if(password.length <= 6 || password.length > 45) {
-        return res.status(403).json({msg:'Das Passwort sollte mindestens 7 Zeichen enthalten.'});
+    if(password.length < 5 || password.length > 45) {
+        return res.status(403).json({msg:'Das Passwort sollte mindestens 6 Zeichen enthalten.'});
     }
 
     let userData = await database.procedure('get_user', [username]);
