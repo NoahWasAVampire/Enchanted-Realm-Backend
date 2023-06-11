@@ -49,8 +49,10 @@ let authMiddleware = (req, res, next) => {
     }
 };
 
-app.get('/test', authMiddleware, async (request, response) => {
-    response.send(`You hit home page!\n`)
+app.get('/achievements', authMiddleware, async (req, res) => {
+    let result = await database.procedure("get_achievements",[req.session.user.userid])
+    console.log(result);
+    res.json(result);
 })
 
 app.post('/login', async(req, res) => {
@@ -74,7 +76,8 @@ app.post('/login', async(req, res) => {
     }
 
     req.session.authenticated = true;
-    req.session.user = {username, password};
+    req.session.user = {userid: userData[0].u_id, username, password};
+    console.log(req.session.user);
     res.json(req.session);
 })
 
