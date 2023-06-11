@@ -45,7 +45,7 @@ let authMiddleware = (req, res, next) => {
     if(req.session.authenticated) {
         next();
     } else {
-        return res.sendStatus(401);
+        return res.status(401).json({msg:"Unauthorized"});
     }
 };
 
@@ -56,48 +56,70 @@ app.get('/achievements', authMiddleware, async (req, res) => {
 })
 
 app.post('/login', async(req, res) => {
-    const {username, password} = req.body; 
+    const {username, password} = req.body;
     if(!username || !password) {
-        return res.sendStatus(401);
+        return res.status(401).json({msg:'Bitte geben sie Nutzernamen und Passwort ein.'});
     }
 
     if(req.session.authenticated) {
         return res.json(req.session);
-    } 
-    
+    }
+
     let userData = await database.procedure('get_user', [username]);
-    
+
     if(userData.length == 0) {
-        return res.sendStatus(401);
+        return res.status(401).json({msg:'Der Benutzer existiert nicht.'});
     }
 
     if(password != userData[0].password) {
-        return res.sendStatus(401);
+        return res.status(401).json({msg:'Das Passwort ist falsch.'});
     }
 
     req.session.authenticated = true;
     req.session.user = {userid: userData[0].u_id, username, password};
-    console.log(req.session.user);
+    res.json(req.session);
+    console.log(req.session.user.id);
+})
+
+app.post('/deleteUser', async(req, res) => {
+    const {username, password} = req.body;
+    if(!username || !password) {
+        return res.status(401).json({msg:'Bitte geben sie ihren richten Nutzernamen und ihr Passwort ein.'});
+    }
+
+    if(req.session.authenticated) {
+        return res.json(req.session);
+    }
+    let userData = await database.procedure('get_user', [username]);
+
+    if(userData.length === 0) {
+        return res.status(401).json({msg:'Der Benutzer existiert nicht.'});
+    }
+
+    if(password !== userData[0].password) {
+        return res.status(401).json({msg:'Das Passwort ist falsch.'});
+    }
+    await database.procedure('delete_user', [username]);
     res.json(req.session);
 })
 
 app.post('/register', async(req, res) => {
-    const {username, password} = req.body; 
-    
+    const {username, password} = req.body;
+
     if(!username || !password) {
         return res.status(403).json({msg:'Benutzername / Passwort fehlen'});
     }
 
-    if(username.length < 6 || username.length > 45) {
+    if(username.length < 5 || username.length > 45) {
         return res.status(403).json({msg:'Der Benutzername sollte mindestens 6 Zeichen enthalten.'});
     }
 
-    if(password.length < 6 || password.length > 45) {
+    if(password.length < 5 || password.length > 45) {
         return res.status(403).json({msg:'Das Passwort sollte mindestens 6 Zeichen enthalten.'});
     }
 
     let userData = await database.procedure('get_user', [username]);
-    
+
     if(userData.length != 0) {
         return res.status(403).json({msg:'Ein Benutzer mit diesem Namen existiert bereits.'});
     }
@@ -110,3 +132,27 @@ app.post('/register', async(req, res) => {
 app.listen(3000, () => {
     console.log("Server listening on Port 3000");
 });
+
+app.get('/highscore', authMiddleware, async (req, res) => {
+    let result = await database.procedure('get_highscore', [req.session.user.id]);
+    if(result.length == 0) {
+        res.status(500).json({msg:'Unerwarteter Fehler'});
+    }
+    result[0].username = req.session.user.username;
+    res.json(result[0]);
+})
+
+app.get('/logout', async(req,res)=>{
+    req.session.authenticated = false;
+    req.session.user = {};
+    res.json({msg:''});
+})
+
+app.post('/gameStatistic', authMiddleware, async(req, res) => {
+    if (req.session.authenticated === true){
+        req.session.authenticated = true;
+        res.json(req.session);
+        const {score, defeatedEnemy, distance} = req.body;
+        await database.procedure('insert_statistic', [req.session.user.id, score, defeatedEnemy, distance]);
+    }
+})
