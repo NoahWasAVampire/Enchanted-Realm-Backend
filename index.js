@@ -55,6 +55,14 @@ app.get('/achievements', authMiddleware, async (req, res) => {
     res.json(result);
 })
 
+app.post('/achievements', authMiddleware, async (req, res) => {
+    if(!req.body.achievements) {
+        return res.status(401).json({msg:'Keine Achievements übergeben.'});
+    }
+    let result = await database.procedure("insert_achievements",[req.session.user.userid, req.body.achievements])
+    res.json({msg:"Inserted."});
+})
+
 app.post('/login', async(req, res) => {
     const {username, password} = req.body;
     if(!username || !password) {
@@ -134,9 +142,9 @@ app.listen(3000, () => {
 });
 
 app.get('/highscore', authMiddleware, async (req, res) => {
-    let result = await database.procedure('get_highscore', [req.session.user.id]);
+    let result = await database.procedure('get_highscore', [req.session.user.userid]);
     if(result.length == 0) {
-        res.status(500).json({msg:'Unerwarteter Fehler'});
+        return res.status(500).json({msg:'Unerwarteter Fehler'});
     }
     result[0].username = req.session.user.username;
     res.json(result[0]);
