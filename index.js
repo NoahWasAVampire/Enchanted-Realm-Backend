@@ -2,6 +2,7 @@ const express = require("express");
 const uuid = require('uuid');
 const dotenv = require('dotenv');
 const session = require('express-session');
+require('express-async-errors');
 const store = session.MemoryStore();
 dotenv.config();
 
@@ -164,3 +165,8 @@ app.post('/gameStatistic', authMiddleware, async(req, res) => {
         await database.procedure('insert_statistic', [req.session.user.id, score, defeatedEnemy, distance]);
     }
 })
+
+app.use(function(err, req, res, next) {
+    console.error(err.stack);
+    return res.status(500).json({msg:"Internal Server Error"});
+  });
