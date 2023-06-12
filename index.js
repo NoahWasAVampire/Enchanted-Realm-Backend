@@ -134,9 +134,9 @@ app.listen(3000, () => {
 });
 
 app.get('/highscore', authMiddleware, async (req, res) => {
-    let result = await database.procedure('get_highscore', [req.session.user.id]);
+    let result = await database.procedure('get_highscore', [req.session.user.userid]);
     if(result.length == 0) {
-        res.status(500).json({msg:'Unerwarteter Fehler'});
+        return res.status(500).json({msg:'Unerwarteter Fehler'});
     }
     result[0].username = req.session.user.username;
     res.json(result[0]);
