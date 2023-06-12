@@ -55,6 +55,14 @@ app.get('/achievements', authMiddleware, async (req, res) => {
     res.json(result);
 })
 
+app.post('/achievements', authMiddleware, async (req, res) => {
+    if(!req.body.achievements) {
+        return res.status(401).json({msg:'Keine Achievements übergeben.'});
+    }
+    let result = await database.procedure("insert_achievements",[req.session.user.userid, req.body.achievements])
+    res.json({msg:"Inserted."});
+})
+
 app.post('/login', async(req, res) => {
     const {username, password} = req.body;
     if(!username || !password) {
