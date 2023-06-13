@@ -15,7 +15,6 @@ app.use(express.json());
 app.use(express.urlencoded({extended:false}))
 app.use(router);
 
-f
 // add & configure middleware
 app.use(session({
     genid: (request) => {
