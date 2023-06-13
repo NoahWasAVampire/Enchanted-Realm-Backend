@@ -15,7 +15,7 @@ app.use(express.json());
 app.use(express.urlencoded({extended:false}))
 app.use(router);
 
-
+f
 // add & configure middleware
 app.use(session({
     genid: (request) => {
@@ -49,6 +49,16 @@ let authMiddleware = (req, res, next) => {
         return res.status(401).json({msg:"Unauthorized"});
     }
 };
+
+app.get('/history', authMiddleware, async (req, res) => {
+    let result = await database.procedure('get_history', [req.session.user.userid]);
+    if(result.length == 0) {
+        return res.status(500).json({msg:'Unerwarteter Fehler'});
+    }
+    result[0].username = req.session.user.username;
+    res.json(result[0]);
+})
+
 
 app.get('/achievements', authMiddleware, async (req, res) => {
     let result = await database.procedure("get_achievements",[req.session.user.userid])
@@ -167,3 +177,5 @@ app.use(function(err, req, res, next) {
     console.error(err.stack);
     return res.status(500).json({msg:"Internal Server Error"});
   });
+
+
