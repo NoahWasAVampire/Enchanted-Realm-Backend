@@ -49,6 +49,17 @@ let authMiddleware = (req, res, next) => {
     }
 };
 
+
+app.get('/globalHighscore', authMiddleware, async (req, res) => {
+    let result = await database.procedure('get_globalHighscore', [req.session.user.userid]);
+    console.log(result);
+    if(result.length == 0) {
+        return res.status(500).json({msg:'Unerwarteter Fehler'});
+    }
+    result[0].username = req.session.user.username;
+    res.json(result);
+})
+
 app.get('/history', authMiddleware, async (req, res) => {
     let result = await database.procedure('get_history', [req.session.user.userid]);
     if(result.length == 0) {
